@@ -1,4 +1,4 @@
-%% Workflow_CNN
+%% Workflow_fa
 % this code determines the wear and non wear sections in the data ussing the
 % Hees's angorithm inplemented by by Syed et al., (2022).
 % IMPORTANT NOTE: if you have first run the extract_gt3x3df script. Restart
@@ -13,9 +13,9 @@ clear; clc; close all;
 cd('C:\Users\u0117545\Documents\GitHub\EduCan\')
 path.root 		= 'C:\Users\u0117545\Documents\GitHub\EduCan\';
 path.data       = 'C:\Users\u0117545\KU Leuven\An De Groef - ActiLife EduCan Trial\Data';
-timepoint       = 'A12';
+timepoint       = 'A4';
 plot_or_not     = 0;
-
+import_ext      = 'parq';
 
 %% set python environment
 pe = pyenv("Version", "C:\GBW_MyPrograms\Anaconda3\envs\MATLAB_PYTHON\python.exe");
@@ -26,7 +26,7 @@ if count(py.sys.path,pathToFunc) == 0
 end
 
 %%
-for subj = 1:40
+for subj = 161:190
     lower = 1:10:181;
     upper = 10:10:190;
 
@@ -75,10 +75,32 @@ for subj = 1:40
 
         disp('     Reading in the hip data......')
 
-        rawdata.hip_t = parquetread(fullfile(path.subj, 'rawdata_hip.parq'));
+        if strcmp(import_ext, 'parq')
+            rawdata.hip_t = parquetread(fullfile(path.subj, 'rawdata_hip.parq'));
+
+        elseif stcmp(import_ext, 'csv')
+            opts = delimitedTextImportOptions("NumVariables", 3);
+
+            % Specify range and delimiter
+            opts.DataLines = [12, Inf];
+            opts.Delimiter = ",";
+
+            % Specify column names and types
+            opts.VariableNames = ["AccelerometerX", "AccelerometerY", "AccelerometerZ"];
+            opts.VariableTypes = ["double", "double", "double"];
+
+            % Specify file level properties
+            opts.ExtraColumnsRule = "ignore";
+            opts.EmptyLineRule = "read";
+
+            % Specify variable properties
+            opts = setvaropts(opts, ["AccelerometerX", "AccelerometerY", "AccelerometerZ"], "EmptyFieldRule", "auto");
+
+            rawdata.hip_t = readtable(fullfile(path.subj,'rawdata_hip.csv'), opts);
+        end
+
         rawdata.hip = table2array(rawdata.hip_t);
         hip_data = mat2np(rawdata.hip);
-
         %% obtain raw acceleration data non-wear-periods from the hip sensor
         disp('     Segment wear vs non-wear periods......')
         sample_rate = py.int(fs);
@@ -143,15 +165,22 @@ for subj = 1:40
             if size(blocks,1) >= 3
 
                 disp('     Load left arm data:......')
-                rawdata.left_t = parquetread(fullfile(path.subj, 'rawdata_left.parq'));
-                rawdata.left = table2array(rawdata.left_t);
-                %left_data = mat2np(rawdata.left);
+                if strcmp(import_ext, 'parq')
+                    rawdata.left_t = parquetread(fullfile(path.subj, 'rawdata_left.parq'));
+                    rawdata.left = table2array(rawdata.left_t);
 
+                    disp('     Load right arm data:......')
+                    rawdata.right_t = parquetread(fullfile(path.subj, 'rawdata_right.parq'));
+                    rawdata.right = table2array(rawdata.right_t);
+                elseif strcmp(inport_ext, 'csv')
+                    disp('     Load left arm data:......')
+                    rawdata.left_t = readtable(fullfile(path.subj, 'rawdata_left.csv'), opts);
+                    rawdata.left = table2array(rawdata.left_t);
 
-                disp('     Load right arm data:......')
-                rawdata.right_t = parquetread(fullfile(path.subj, 'rawdata_right.parq'));
-                rawdata.right = table2array(rawdata.right_t);
-                %right_data = mat2np(rawdata.right);
+                    disp('     Load right arm data:......')
+                    rawdata.right_t = readtable(fullfile(paht.subj, 'rawdata_right.csv'), opts);
+                    rawdata.right = table2array(rawdata.right_t);
+                end
 
                 if ~isempty(rawdata.right) && ~isempty(rawdata.left)
                     disp(['     Wear time and data check completed......', newline, '     Conclusion: Data will be analysed'])

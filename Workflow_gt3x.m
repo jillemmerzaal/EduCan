@@ -24,7 +24,7 @@ if count(py.sys.path,pathToFunc) == 0
 end
 
 %%
-for subj = 41:80
+for subj = 161:190
 
     lower = 1:10:181;
     upper = 10:10:190;
